@@ -414,7 +414,9 @@ class RestaurantDataList {
   }
 }
 const restaurantDataList = new RestaurantDataList();
-const CATEGORY_OPTIONS = ["한식", "중식", "일식", "양식", "아시안", "기타"];
+const SELECT_OPTION = {
+  category: ["한식", "중식", "일식", "양식", "아시안", "기타"]
+};
 const DISTANCE_OPTIONS = ["5분 내", "10분 내", "15분 내", "20분 내", "30분 내"];
 function RestaurantAddModal() {
   const $fragment = document.createDocumentFragment();
@@ -439,7 +441,6 @@ function createRestaurantItem(event) {
   try {
     event.preventDefault();
     const restaurantData = Object.fromEntries(new FormData(event.target));
-    console.log(restaurantData);
     restaurantDataList.addData(restaurantData);
     restaurantDataList.renderRestaurantList();
     removeModal();
@@ -456,7 +457,7 @@ function createFormItems() {
       renderChild: () => Select({
         name: "category",
         id: "category",
-        options: CATEGORY_OPTIONS,
+        options: SELECT_OPTION.category,
         isRequired: true
       })
     },
@@ -527,6 +528,34 @@ function RestaurantHeader({ title }) {
   $header.appendChild($addButton);
   return $header;
 }
+const CLASS_NAME = {
+  favoriteIcon: "favorite__star"
+};
+function RestaurantDetailModalButtonContainer(id) {
+  const $buttonContainer = createElement({
+    tag: "div",
+    classNames: ["restaurantDetail__buttonWrap"]
+  });
+  const $deleteButton = createElement({
+    tag: "button",
+    classNames: ["restaurantDetail__button", "restaurantDetail_delete"],
+    textContent: "삭제하기"
+  });
+  const $closeButton = createElement({
+    tag: "button",
+    classNames: ["restaurantDetail__button", "restaurantDetail_close"],
+    textContent: "닫기"
+  });
+  $deleteButton.addEventListener("click", () => {
+    removeModal();
+    restaurantDataList.removeDataById(id);
+    restaurantDataList.renderRestaurantList();
+  });
+  $closeButton.addEventListener("click", removeModal);
+  $buttonContainer.appendChild($deleteButton);
+  $buttonContainer.appendChild($closeButton);
+  return $buttonContainer;
+}
 function RestaurantItemCategory({ src, alt }) {
   const $category = createElement({
     tag: "div",
@@ -547,8 +576,8 @@ function RestaurantItemFavorite({ isFavorite, id }) {
   });
   const $favorite = createElement({
     tag: "img",
-    name: "favorite__star",
-    classNames: ["favorite__star"],
+    name: CLASS_NAME.favoriteIcon,
+    classNames: [CLASS_NAME.favoriteIcon],
     src: isFavorite ? "./fill-star.png" : "./empty-star.png",
     alt: isFavorite ? "좋아요한 별" : "좋아요안한 별"
   });
@@ -578,18 +607,7 @@ function RestaurantItemNameDistance({ name, distance }) {
   $nameDistanceWrap.appendChild($distance);
   return $nameDistanceWrap;
 }
-function RestaurantDetailModal(restaurantData) {
-  const $section = createElement({
-    tag: "section",
-    classNames: ["restaurantDetail__modal"]
-  });
-  const $detailInfo = createDetailInfo({ ...restaurantData });
-  const $buttons = createButtons(restaurantData.id);
-  $section.appendChild($detailInfo);
-  $section.appendChild($buttons);
-  return $section;
-}
-function createDetailInfo({
+function RestaurantDetailModalInfo({
   id,
   src,
   alt,
@@ -636,30 +654,16 @@ function createDetailInfo({
   $info.appendChild($link);
   return $info;
 }
-function createButtons(id) {
-  const $buttonWrap = createElement({
-    tag: "div",
-    classNames: ["restaurantDetail__buttonWrap"]
+function RestaurantDetailModal(restaurantData) {
+  const $section = createElement({
+    tag: "section",
+    classNames: ["restaurantDetail__modal"]
   });
-  const $deleteButton = createElement({
-    tag: "button",
-    classNames: ["restaurantDetail__button", "restaurantDetail_delete"],
-    textContent: "삭제하기"
-  });
-  const $closeButton = createElement({
-    tag: "button",
-    classNames: ["restaurantDetail__button", "restaurantDetail_close"],
-    textContent: "닫기"
-  });
-  $buttonWrap.appendChild($deleteButton);
-  $buttonWrap.appendChild($closeButton);
-  $deleteButton.addEventListener("click", () => {
-    removeModal();
-    restaurantDataList.removeDataById(id);
-    restaurantDataList.renderRestaurantList();
-  });
-  $closeButton.addEventListener("click", removeModal);
-  return $buttonWrap;
+  const $detailInfo = RestaurantDetailModalInfo({ ...restaurantData });
+  const $buttons = RestaurantDetailModalButtonContainer(restaurantData.id);
+  $section.appendChild($detailInfo);
+  $section.appendChild($buttons);
+  return $section;
 }
 function RestaurantItem({
   id,
@@ -698,7 +702,7 @@ function RestaurantItem({
   $restaurantItem.appendChild($category);
   $restaurantItem.appendChild($restaurantInfo);
   $restaurantItem.addEventListener("click", (event) => {
-    if (event.target.name !== "favorite__star") {
+    if (event.target.name !== CLASS_NAME.favoriteIcon) {
       const dataById = restaurantDataList.getDataById(id);
       Modal(() => RestaurantDetailModal({ ...dataById }));
     }
@@ -764,6 +768,7 @@ function RestaurantNav() {
   $nav.append($allRestaurant, $favoriteRestaurant);
   return $nav;
 }
+const SORTING_OPTIONS = ["이름순", "거리순"];
 function RestaurantFilters() {
   const $filterContainer = createElement({
     tag: "section",
@@ -773,29 +778,36 @@ function RestaurantFilters() {
     name: "category",
     id: "category-filter",
     classNames: ["restaurant-filter"],
-    options: ["전체", "한식", "중식", "일식", "양식", "아시안", "기타"],
+    options: ["전체", ...SELECT_OPTION.category],
     isDefaultOption: false
   });
   const $sortingFilter = Select({
     name: "sorting",
     id: "sorting-filter",
     classNames: ["restaurant-filter"],
-    options: ["이름순", "거리순"],
+    options: SORTING_OPTIONS,
     values: ["name", "distance"],
     isDefaultOption: false
   });
-  $categoryFilter.addEventListener("change", (event) => {
-    const selectedCategory = event.target.value;
-    restaurantDataList.setCategory(selectedCategory);
-    restaurantDataList.renderRestaurantList();
-  });
-  $sortingFilter.addEventListener("change", (event) => {
-    const selectedSorting = event.target.value;
-    restaurantDataList.setSortedFlag(selectedSorting);
-    restaurantDataList.renderRestaurantList();
-  });
+  $categoryFilter.addEventListener(
+    "change",
+    (event) => handleSelectionChange(event, true)
+  );
+  $sortingFilter.addEventListener(
+    "change",
+    (event) => handleSelectionChange(event, false)
+  );
   $filterContainer.append($categoryFilter, $sortingFilter);
   return $filterContainer;
+}
+function handleSelectionChange(event, isCategory) {
+  const selectedValue = event.target.value;
+  if (isCategory) {
+    restaurantDataList.setCategory(selectedValue);
+  } else {
+    restaurantDataList.setSortedFlag(selectedValue);
+  }
+  restaurantDataList.renderRestaurantList();
 }
 function RestaurantApp() {
   const $restaurantHeader = RestaurantHeader({ title: "점심 뭐 먹지" });
