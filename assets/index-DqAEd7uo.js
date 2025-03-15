@@ -320,7 +320,7 @@ __publicField(_RestaurantData, "ERROR_MESSAGE", Object.freeze({
 let RestaurantData = _RestaurantData;
 const DATA_KEY = "restaurantData";
 function getAllData() {
-  return JSON.parse(localStorage.getItem(DATA_KEY) || "");
+  return JSON.parse(localStorage.getItem(DATA_KEY) || "[]");
 }
 function postData(data) {
   localStorage.setItem(DATA_KEY, JSON.stringify(data));
