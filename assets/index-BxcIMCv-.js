@@ -585,7 +585,7 @@ function RestaurantItemFavorite({ isFavorite, id }) {
   $favorite.addEventListener("click", () => {
     restaurantDataList.changeFavorite(id);
     const dataById = restaurantDataList.getDataById(id);
-    $favorite.src = dataById.isFavorite ? "/public/fill-star.png" : "/public/empty-star.png";
+    $favorite.src = dataById.isFavorite ? "./fill-star.png" : "./empty-star.png";
   });
   return $favoriteWrap;
 }
